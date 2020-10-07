@@ -1,0 +1,1 @@
+export const CRUD_METHODS = ['post', 'put', 'get', 'delete']
