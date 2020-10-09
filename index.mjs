@@ -4,6 +4,7 @@ import { StringDecoder } from 'string_decoder'
 
 import handlers from './lib/handlers.mjs';
 import { isNumber, parseJsonToObject } from './helpers/utils.mjs';
+import { sendTwilioSms } from './helpers/twilioSmsSender.mjs';
 
 const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url, true);
@@ -14,6 +15,12 @@ const server = http.createServer((req, res) => {
     const method = req.method.toLocaleLowerCase();
 
     const decoder = new StringDecoder('utf-8');
+
+
+
+    sendTwilioSms('993474039', 'ljkj', (err) => console.log(err + 'lkjh'))
+
+
     let buffer = '';
 
     req.on('data', (data) => buffer += decoder.write(data));
