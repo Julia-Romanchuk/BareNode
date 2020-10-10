@@ -4,15 +4,14 @@ import https from 'https'
 import { isString } from "./utils.mjs";
 
 const config = {
-    fromPhone: '099',
-    twilioSID: 'AC0edea30152d3b58d138a70f1a443a3a8',
-    twilioAuthToken: 'e2710126e3dc22b1611d5847856fc397'
+    fromPhone: '+15005550006',
+    twilioSID: 'ACb32d411ad7fe886aac54c665d25e5c5d',
+    twilioAuthToken: '9455e3eb3109edc12e3d8c92768f7a67'
 }
 
 export const sendTwilioSms = (toPhone, message, cb) => {
     const phone = isString(toPhone);
     const text = isString(message) && message.length < 3000 ? message : false;
-    console.log('lkjhgfghj')
 
     if (phone && text) {
         const requestPayload = querystring.stringify({

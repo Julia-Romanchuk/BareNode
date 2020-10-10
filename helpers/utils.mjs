@@ -18,6 +18,15 @@ export const createRandomString = function(strLength){
 };
 
 // types
-export const isString = (str) => typeof str === 'string' && str.trim().length ? str : false;
+export const isString = (str, { maxLength, posibleValues } = {}) => {
+    try {
+        if ( typeof str !== 'string' ) throw Error;
+        if ( maxLength && str.trim().length > maxLength ) throw Error;
+        if ( posibleValues && !posibleValues.includes(str) ) throw Error;
+    } catch (err) { 
+        return false
+    }
+    return str;
+};
 export const isNumber = (num) => typeof num === 'number' ? num : false;
 export const isArray = (arr) => typeof arr === 'object' && arr instanceof Array ? arr : false;
