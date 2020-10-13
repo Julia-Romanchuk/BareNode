@@ -28,5 +28,16 @@ export const isString = (str, { maxLength, posibleValues } = {}) => {
     }
     return str;
 };
+
 export const isNumber = (num) => typeof num === 'number' ? num : false;
-export const isArray = (arr) => typeof arr === 'object' && arr instanceof Array ? arr : false;
+
+export const isArray = (arr, { nonEmpty } = {}) => {
+    try {
+        if (typeof arr === 'object' && arr instanceof Array ) throw Error;
+        if (nonEmpty && arr.length === 0) throw Error;
+    } catch (err) { 
+        return false 
+    }
+
+    return arr;
+};

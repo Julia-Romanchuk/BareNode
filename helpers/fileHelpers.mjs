@@ -1,11 +1,7 @@
 import path from 'path'
 
-const fileHelpers = {};
+export const baseFolder = (folderName) => path.join( `~/../${folderName}/`);
 
-fileHelpers.baseStorageFolder = path.join( '~/../.data/');
-
-fileHelpers.getFilePath = (fileName, subfolder, fileExtension = '.json', baseFolder = fileHelpers.baseStorageFolder ) => {
-    return baseFolder + subfolder + '/' + fileName + fileExtension;
+export const getFilePath = (fileName, subfolder, {fileExtension = '.json'} = {}) => {
+    return baseFolder + `${subfolder}/` + fileName + fileExtension;
 }
-
-export default fileHelpers

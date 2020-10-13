@@ -1,20 +1,20 @@
-import path from 'path';
 import http from 'http';
 import https from 'https';
-import fs from 'fs';
 import url from 'url';
 
 import Data from './lib/data'
+import Log from './lib/log'
 import { ONE_MINUTE } from './common/constans.mjs';
 import { isString } from './helpers/utils.mjs';
 import { CRUD_METHODS } from './common/constans.mjs';
 import { isArray } from 'util';
 import { isNumber } from './helpers/utils.mjs';
 import { sendTwilioSms } from './helpers/twilioSmsSender.mjs';
+import { ONE_DAY } from './common/constans.mjs';
 
 export const workers = {};
 
-workers.loop = () => setInterval(workers.gatherAllChecks, 5 * 1000)
+workers.loop = () => setInterval(workers.gatherAllChecks, ONE_MINUTE)
 
 workers.gatherAllChecks = () => {
     Data.list('checks', (err, checks) => {
@@ -97,7 +97,7 @@ workers.performCheck = (checkData) => {
         _sendOutcome();
     });
 
-    req.on('timeout', err => {
+    req.on('timeout', () => {
         checkOutcome.error = 'timeout';
         _sendOutcome();
     })
@@ -108,15 +108,18 @@ workers.performCheck = (checkData) => {
 workers.processCheckOutcome = (checkData, checkOutcome) => {
     //state is 'up' if no response error and statusCode is one of user allow  
     const state = !checkOutcome.error && checkData.statusCode.includes(checkOutcome.responseCode) ? 'up' : 'down';
+    const isAlertWanted = checkData.lastChecked && state !== checkData.state;
+    const checkTime = Date.now();
 
     checkData.state = state;
-    checkData.lastChecked = Date.now();
+    checkData.lastChecked = checkTime;
 
+    workers.log(checkData, checkOutcome, checkTime, isAlertWanted)
     Data.update('checks', checkData.id, checkData, err => {
         if (!err) {
             //we have to alert user if state changed
             //lastChecked allow to understand is check perform initialy
-            if (checkData.lastChecked && state !== checkData.state) workers.alertUserToStatusChange(checkData)
+            if (isAlertWanted) workers.alertUserToStatusChange(checkData)
         } else console.log('Couldnt update check')
     })
 };
@@ -125,6 +128,40 @@ workers.alertUserToStatusChange = (checkData) => {
     const msg = `Alert: your check to ${checkData.method.toUpperCase()} ${checkData.protocol}://${checkData.url} is currently ${checkData.state}.`;
     sendTwilioSms(checkData.userPhone, msg, err => err ? console.log(err) : console.log('User successfully alerted'));
 }
+
+workers.log = (check, outcome, checkTime, isAlertWanted) => {
+    const logData = JSON.stringify({
+        check,
+        outcome,
+        alert: isAlertWanted,
+        state: check.state,
+        checkTime 
+    })
+
+    Log.append(check.id, logData, err => err  ? console.log(err) : console.log('Successfully appended'));
+
+};
+
+workers.rotateLogs = () => {
+    Log.list(false, (err, logsList) => {
+        if (!err && logsList) {
+            if ( !err && isArray(logsList, { nonEmpty }) ) {
+                logsList.forEach(logName => {
+                    const compressedLogName = logName + '-' + Date.now();
+                    Log.compress(logName, compressedLogName, err => {
+                        if (!err) {
+                            Log.truncate(logName, err => {
+                                err ? console.log(err) : console.log('Log file truncated successfully')
+                            })
+                        } else console.log('Cannot compress file')
+                    })
+                })
+            } 
+        } else console.log(err)
+    })
+}
+
+workers.logRotationLoop = () => setInterval(workers.rotateLogs, ONE_DAY);
 
 workers.init = () => {
     workers.gatherAllChecks() 
